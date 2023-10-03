@@ -27,6 +27,18 @@ public class Main {
         if (selectedPart.equals("a")){
             List<Integer> minimaxInfoObject = partAMinimaxSearch(initialState, transpostionTable);
             System.out.println(transpostionTable.size());
+            if(minimaxInfoObject.get(0) == 0){
+                System.out.println("Neither player has a guaranteed win; game will end in a tie with perfect play on both sides.");
+            }
+            else if(minimaxInfoObject.get(0) < 0){
+                System.out.println("Second player has a guaranteed win with perfect play");
+            }
+            else{
+                System.out.println("First player has a guaranteed win with perfect play");
+            }
+            if(debug){
+                System.out.println(transpostionTable);
+            }
         }
     }
 
@@ -57,6 +69,7 @@ public class Main {
             List<Integer> minimaxInfoUpdated = new ArrayList<>();
             minimaxInfoUpdated.add(v);
             minimaxInfoUpdated.add(bestMove);
+            transpositionTable.put(state.getBoard(), minimaxInfoUpdated);
             return minimaxInfoUpdated;
         }
         else {
@@ -74,6 +87,7 @@ public class Main {
             List<Integer> minimaxInfoUpdated = new ArrayList<>();
             minimaxInfoUpdated.add(v);
             minimaxInfoUpdated.add(best_move);
+            transpositionTable.put(state.getBoard(), minimaxInfoUpdated);
             return minimaxInfoUpdated;
         }
 
@@ -131,6 +145,5 @@ public class Main {
         return new State(newBoard, minimaxInfo);
 
     }
-
 
 }
