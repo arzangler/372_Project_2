@@ -20,8 +20,12 @@ public class State {
     /**
      * @return The Board of state as a 2D array.
      */
-    public String getBoard() {
+    public String getBoardAs2DArray() {
         return board.toString();
+    }
+
+    public Board getBoard() {
+        return board;
     }
 
     /**
