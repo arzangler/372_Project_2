@@ -27,7 +27,11 @@ public class Main {
         Map<Board, List<Integer>> transpostionTable = new HashMap<>();
 
 
-        if (selectedPart.equals("a")) {
+        if (selectedPart.equals("c")) {
+            // do part C stuff and figure out the depth problem then print it all out - see if the heuristic can be improved
+            //without doing too much work with the functions that I copied and then turn in.
+
+        } else if (selectedPart.equals("a")) {
             List<Integer> minimaxInfoObject = partAMinimaxSearch(initialState, transpostionTable);
             System.out.println("Transposition table has " + transpostionTable.size() + " states.");
             if (minimaxInfoObject.get(0) == 0) {
@@ -53,9 +57,7 @@ public class Main {
             }
 
 
-        }
-
-        else if (selectedPart.equals("b")) {
+        } else if (selectedPart.equals("b")) {
             int alpha = Integer.MIN_VALUE;
             int beta = Integer.MAX_VALUE;
             pruneCount = 0;
@@ -137,6 +139,7 @@ public class Main {
                         test.add(0);
                         test.add(0);
                         State testState = new State(boardToPlay, test);
+                        // test is not used just need to do this to have the transpositionTable updated.
                         test = alphaBetaSearch(testState, Integer.MIN_VALUE, Integer.MAX_VALUE, transpostionTable);
                     }
                 }
@@ -148,6 +151,7 @@ public class Main {
         }
     }
 
+    // Part A
     public static List<Integer> partAMinimaxSearch(State state, Map<Board, List<Integer>> transpositionTable) {
         if (transpositionTable.containsKey(state.getBoard())){
             return transpositionTable.get(state.getBoard());
@@ -264,6 +268,78 @@ public class Main {
         }
     }
 
+    public static List<Integer> alphaBetaHeuristicSearch(State state, int alpha, int beta, int depth, Map<Board, List<Integer>> transpositionTable){
+        if (transpositionTable.containsKey(state.getBoard())){
+            return transpositionTable.get(state.getBoard());
+        }
+        else if (state.getBoard().getGameState() != GameState.IN_PROGRESS){
+            int util = utility(state);
+            List<Integer> minimaxInfoUpdated = new ArrayList<>();
+            minimaxInfoUpdated.add(util);
+            minimaxInfoUpdated.add(null);
+            transpositionTable.put(state.getBoard(), minimaxInfoUpdated);
+            return minimaxInfoUpdated;
+        }
+        else if (isCutoff(state, depth)) { // no longer sure that this is implemented correctly.
+            int heuristic = eval(state);
+            List<Integer> miniMaxInfoH = new ArrayList<>();
+            miniMaxInfoH.add(heuristic);
+            miniMaxInfoH.add(null);
+            transpositionTable.put(state.getBoard(), miniMaxInfoH);
+            return miniMaxInfoH;
+        }
+        else if (state.getToMove() == Player.MAX){
+            int v = Integer.MIN_VALUE;
+            Integer bestMove = null;
+            List<Integer> minimaxInfoUpdated = new ArrayList<>();
+            for (int action : actions(state)) {
+                State child_state = result(state, action);
+                List<Integer> childInfo = alphaBetaHeuristicSearch(child_state, alpha, beta, depth+=1, transpositionTable);
+                int v2 = childInfo.get(0);
+                if (v2 > v){
+                    v = v2;
+                    bestMove = action;
+                    alpha = Math.max(alpha, v);
+                }
+                if (v >= beta){
+                    minimaxInfoUpdated.add(v);
+                    minimaxInfoUpdated.add(bestMove);
+                    pruneCount++;
+                    return minimaxInfoUpdated;
+                }
+            }
+            minimaxInfoUpdated.add(v);
+            minimaxInfoUpdated.add(bestMove);
+            transpositionTable.put(state.getBoard(), minimaxInfoUpdated);
+            return minimaxInfoUpdated;
+        }
+        else {
+            int v = Integer.MAX_VALUE;
+            Integer best_move = null;
+            List<Integer> minimaxInfoUpdated = new ArrayList<>();
+            for (int action : actions(state)){
+                State child_state = result(state, action);
+                List<Integer> childInfo = alphaBetaHeuristicSearch(child_state, alpha, beta, depth+=1, transpositionTable);
+                int v2 = childInfo.get(0);
+                if (v2 < v) {
+                    v = v2;
+                    best_move = action;
+                    beta = Math.min(beta, v);
+                }
+                if (v <= alpha) {
+                    minimaxInfoUpdated.add(v);
+                    minimaxInfoUpdated.add(best_move);
+                    pruneCount++;
+                    return minimaxInfoUpdated;
+                }
+            }
+            minimaxInfoUpdated.add(v);
+            minimaxInfoUpdated.add(best_move);
+            transpositionTable.put(state.getBoard(), minimaxInfoUpdated);
+            return minimaxInfoUpdated;
+        }
+    }
+
     /**
      * @param state
      * @return the integer utility value of a terminal state
@@ -279,6 +355,59 @@ public class Main {
         }
         else {
             return 0;
+        }
+    }
+
+    /**
+     *
+     * @param state given a state that is at the cutoff depth
+     * @return its utility value which is associated with the chance that this state is likely to lead to a win.
+     */
+    // is there a world in which this function just returns 0 if there aren't that many moves made already?
+    public static int eval(State state) {
+        Board board = state.getBoard();
+        byte[][] boardAsByte = board.getBoardAsByte();
+        int numRows = board.getRows();
+        int numCols = board.getCols();
+
+        int evalCount = 0;
+
+        // check for 2 "wins" if so award 3 points to count depending on whose turn it is.
+        for (int consecToWin = 2; consecToWin < 4; consecToWin++) {
+            for (int r = 0; r < numRows; r++) {
+                for (int c = 0; c < numCols; c++) {
+                    if (boardAsByte[r][c] == 0) {
+                        continue;
+                    }
+
+                    if ((c <= numCols - consecToWin && allMatchInARow(r, c, consecToWin, boardAsByte))
+                    || (r <= numRows - consecToWin && allMatchInAColumn(r, c, consecToWin, boardAsByte))
+                    || (r <= numRows - consecToWin && c <= numCols - consecToWin && allMatchInANorthEastDiagonal(r, c, consecToWin, boardAsByte))
+                    || (r <= numRows - consecToWin && c - consecToWin >= -1 && allMatchInANorthWestDiagonal(r, c, consecToWin, boardAsByte))) {
+                        if (boardAsByte[r][c] == 1) {
+                            if (consecToWin == 2){
+                                evalCount += 3;
+                            }else {evalCount += 10;}
+                        } else if (boardAsByte[r][c] == -1) {
+                            if (consecToWin == 2){
+                                evalCount -= 3;
+                            }else{evalCount -= 10;}
+                        }
+                    }
+                }
+            }
+        }
+
+        return evalCount;
+    }
+
+    public static boolean isCutoff(State state, int depth){ // work out the specifics with this when calling it every time - may need to define a few var outside the scope
+        Board board = state.getBoard();
+        if (board.getNumberOfMoves() >= depth){
+            return true;
+        }
+        else{
+            return false;
         }
     }
 
@@ -314,7 +443,38 @@ public class Main {
         minimaxInfo.add(col);
 
         return new State(newBoard, minimaxInfo);
+    }
 
+    public static boolean allMatchInARow(int row, int startcol, int consecToWin, byte[][] board) {
+        for (int x = 0; x < consecToWin - 1; x++) {
+            if (board[row][startcol + x] != board[row][startcol + x + 1])
+                return false;
+        }
+        return true;
+    }
+
+    public static boolean allMatchInAColumn(int startrow, int col, int consecToWin, byte[][] board){
+        for (int x = 0; x < consecToWin - 1; x++) {
+            if (board[startrow + x][col] != board[startrow + x + 1][col])
+                return false;
+        }
+        return true;
+    }
+
+    public static boolean allMatchInANorthEastDiagonal(int startrow, int startcol, int consecToWin, byte[][] board){
+        for (int x = 0; x < consecToWin - 1; x++) {
+            if (board[startrow + x][startcol + x] != board[startrow + x + 1][startcol + x + 1])
+                return false;
+        }
+        return true;
+    }
+
+    public static boolean allMatchInANorthWestDiagonal(int startrow, int startcol, int consecToWin, byte[][] board){
+        for (int x = 0; x < consecToWin - 1; x++) {
+            if (board[startrow + x][startcol - x] != board[startrow + x + 1][startcol - x - 1])
+                return false;
+        }
+        return true;
     }
 
 }

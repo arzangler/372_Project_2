@@ -97,6 +97,7 @@ public class Board {
      * Called only by constructor to determine the winner if there is one.
      * Assumes lowestFreeRow array and isBoardFull are set correctly.
      */
+    //todo
     private GameState calcStateOfGame() {
         // check for wins
         for (int r = 0; r < numRows; r++) {
@@ -207,6 +208,11 @@ public class Board {
         }
         sb.append("0 1 2 3 4 5 6 7 8 9", 0, numCols * 2);
         return sb.toString();//  + "full=" + boardIsFull + " winner=" + winner;
+    }
+
+    // can i do this?
+    public byte[][] getBoardAsByte() {
+        return board;
     }
 
     /**
