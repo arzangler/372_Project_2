@@ -3,6 +3,7 @@ import java.util.*;
 public class Main {
 
     static int pruneCount; // Count the amount of times the tree is pruned
+    static int lookAhead; // To help the Is-Cutoff function
 
     public static void main(String[] args) {
         Scanner scan = new Scanner(System.in);
@@ -30,8 +31,78 @@ public class Main {
         if (selectedPart.equals("c")) {
             // do part C stuff and figure out the depth problem then print it all out - see if the heuristic can be improved
             //without doing too much work with the functions that I copied and then turn in.
+            System.out.print("Number of moves to look ahead (depth): ");
+            lookAhead = Integer.parseInt(scan.nextLine());
 
-        } else if (selectedPart.equals("a")) {
+            // setup game
+            boolean play = true;
+            Board boardToPlay = new Board(numRows, numCols, consecToWin);
+            System.out.print("Who plays first? 1=human, 2=computer: ");
+            int player = Integer.parseInt(scan.nextLine());
+            System.out.println(boardToPlay.to2DString());
+            List<Integer> minimaxInfoObject = alphaBetaHeuristicSearch(initialState, Integer.MIN_VALUE, Integer.MAX_VALUE, 0, transpostionTable);
+
+            while(play) {
+                if (player == 1) {
+                    while (boardToPlay.getGameState() == GameState.IN_PROGRESS) {
+                        List<Integer> minimaxInfoPlay = transpostionTable.get(boardToPlay);
+                        System.out.println("The board has : " + transpostionTable.size() + " states.");
+                        System.out.println("Minimax value for this state: " + minimaxInfoPlay.get(0) + ", optimal move: " + minimaxInfoPlay.get(1));
+                        System.out.println("It is " + boardToPlay.getPlayerToMoveNext() + " turn!");
+                        int move;
+                        if (boardToPlay.getPlayerToMoveNext() == Player.MAX) {
+                            System.out.print("Enter move: ");
+                            move = Integer.parseInt(scan.nextLine());
+                        } else {
+                            move = minimaxInfoPlay.get(1);
+                        }
+                        boardToPlay = boardToPlay.makeMove(move);
+                        System.out.println(boardToPlay.to2DString());
+
+                        List<Integer> test = new ArrayList<>();
+                        test.add(0);
+                        test.add(0);
+                        State testState = new State(boardToPlay, test);
+                        transpostionTable.clear();
+                        test = alphaBetaHeuristicSearch(testState, Integer.MIN_VALUE, Integer.MAX_VALUE,0, transpostionTable);
+
+                    }
+                    System.out.println("The winner is " + boardToPlay.getWinner());
+                }
+                else {
+                    while (boardToPlay.getGameState() == GameState.IN_PROGRESS) {
+                        List<Integer> minimaxInfoPlay = transpostionTable.get(boardToPlay);
+                        System.out.println("The board has : " + transpostionTable.size() + " states.");
+                        System.out.println("Minimax value for this state: " + minimaxInfoPlay.get(0) + ", optimal move: " + minimaxInfoPlay.get(1));
+                        System.out.println("It is " + boardToPlay.getPlayerToMoveNext() + " turn!");
+                        int move;
+                        if (boardToPlay.getPlayerToMoveNext() == Player.MAX) {
+                            move = minimaxInfoPlay.get(1);
+                            System.out.println("Computer chooses move: " + move);
+                        } else {
+                            System.out.print("Enter move: ");
+                            move = Integer.parseInt(scan.nextLine());
+                        }
+                        boardToPlay = boardToPlay.makeMove(move);
+                        System.out.println(boardToPlay.to2DString());
+
+                        List<Integer> test = new ArrayList<>();
+                        test.add(0);
+                        test.add(0);
+                        State testState = new State(boardToPlay, test);
+                        // test is not used just need to do this to have the transpositionTable updated.
+                        transpostionTable.clear();
+                        test = alphaBetaHeuristicSearch(testState, Integer.MIN_VALUE, Integer.MAX_VALUE, 0, transpostionTable);
+
+                    }
+                    System.out.println("The winner is " + boardToPlay.getWinner());
+                }
+                System.out.print("Play again?(y/n): ");
+                String playCheck = scan.nextLine();
+                play = playCheck.equals("y");
+            }
+        }
+        else if (selectedPart.equals("a")) {
             List<Integer> minimaxInfoObject = partAMinimaxSearch(initialState, transpostionTable);
             System.out.println("Transposition table has " + transpostionTable.size() + " states.");
             if (minimaxInfoObject.get(0) == 0) {
@@ -57,7 +128,8 @@ public class Main {
             }
 
 
-        } else if (selectedPart.equals("b")) {
+        }
+        else if (selectedPart.equals("b")) {
             int alpha = Integer.MIN_VALUE;
             int beta = Integer.MAX_VALUE;
             pruneCount = 0;
@@ -88,6 +160,7 @@ public class Main {
             }
         }
 
+        /* todo don't need this right not for part C but need to bring it back again for parts A and B
         // Play game!
         boolean play = true;
         Board boardToPlay = new Board(numRows, numCols, consecToWin);
@@ -148,7 +221,10 @@ public class Main {
             System.out.print("Play again?(y/n): ");
             String playCheck = scan.nextLine();
             play = playCheck.equals("y");
+
+
         }
+         */
     }
 
     // Part A
@@ -280,7 +356,8 @@ public class Main {
             transpositionTable.put(state.getBoard(), minimaxInfoUpdated);
             return minimaxInfoUpdated;
         }
-        else if (isCutoff(state, depth)) { // no longer sure that this is implemented correctly.
+        else if (isCutoff(state, depth)) {
+            // System.out.println("depth is equal to " + depth);
             int heuristic = eval(state);
             List<Integer> miniMaxInfoH = new ArrayList<>();
             miniMaxInfoH.add(heuristic);
@@ -294,7 +371,8 @@ public class Main {
             List<Integer> minimaxInfoUpdated = new ArrayList<>();
             for (int action : actions(state)) {
                 State child_state = result(state, action);
-                List<Integer> childInfo = alphaBetaHeuristicSearch(child_state, alpha, beta, depth+=1, transpositionTable);
+                //depth+=1; // CHANGE HERE
+                List<Integer> childInfo = alphaBetaHeuristicSearch(child_state, alpha, beta, depth+1, transpositionTable);
                 int v2 = childInfo.get(0);
                 if (v2 > v){
                     v = v2;
@@ -319,7 +397,8 @@ public class Main {
             List<Integer> minimaxInfoUpdated = new ArrayList<>();
             for (int action : actions(state)){
                 State child_state = result(state, action);
-                List<Integer> childInfo = alphaBetaHeuristicSearch(child_state, alpha, beta, depth+=1, transpositionTable);
+                //depth+=1; //CHANGE HERE
+                List<Integer> childInfo = alphaBetaHeuristicSearch(child_state, alpha, beta, depth+1, transpositionTable);
                 int v2 = childInfo.get(0);
                 if (v2 < v) {
                     v = v2;
@@ -363,7 +442,6 @@ public class Main {
      * @param state given a state that is at the cutoff depth
      * @return its utility value which is associated with the chance that this state is likely to lead to a win.
      */
-    // is there a world in which this function just returns 0 if there aren't that many moves made already?
     public static int eval(State state) {
         Board board = state.getBoard();
         byte[][] boardAsByte = board.getBoardAsByte();
@@ -401,14 +479,8 @@ public class Main {
         return evalCount;
     }
 
-    public static boolean isCutoff(State state, int depth){ // work out the specifics with this when calling it every time - may need to define a few var outside the scope
-        Board board = state.getBoard();
-        if (board.getNumberOfMoves() >= depth){
-            return true;
-        }
-        else{
-            return false;
-        }
+    public static boolean isCutoff(State state, int depth){
+        return depth >= lookAhead; // todo
     }
 
     /**
