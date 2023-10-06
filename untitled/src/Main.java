@@ -29,8 +29,6 @@ public class Main {
 
 
         if (selectedPart.equals("c")) {
-            // do part C stuff and figure out the depth problem then print it all out - see if the heuristic can be improved
-            //without doing too much work with the functions that I copied and then turn in.
             System.out.print("Number of moves to look ahead (depth): ");
             lookAhead = Integer.parseInt(scan.nextLine());
 
@@ -100,6 +98,10 @@ public class Main {
                 System.out.print("Play again?(y/n): ");
                 String playCheck = scan.nextLine();
                 play = playCheck.equals("y");
+                System.out.print("Who plays fist? 1=human, 2=computer: ");
+                player = Integer.parseInt(scan.nextLine());
+                boardToPlay = new Board(numRows, numCols, consecToWin);
+                minimaxInfoObject = alphaBetaHeuristicSearch(initialState, Integer.MIN_VALUE, Integer.MAX_VALUE, 0, transpostionTable);
             }
         }
         else if (selectedPart.equals("a")) {
@@ -153,78 +155,82 @@ public class Main {
                     String entryString = entry.getKey().toString() + " -> " + "MinimaxInfo[value=" + entry.getValue().get(0) + ", action=" + entry.getValue().get(1) + "]";
                     transTableArray.add(entryString);
                 }
-                transTableArray.sort(String::compareToIgnoreCase); // what
+                transTableArray.sort(String::compareToIgnoreCase);
                 for (String i : transTableArray) {
                     System.out.println(i);
                 }
             }
         }
 
-        /* todo don't need this right not for part C but need to bring it back again for parts A and B
-        // Play game!
-        boolean play = true;
-        Board boardToPlay = new Board(numRows, numCols, consecToWin);
-        System.out.print("Who plays fist? 1=human, 2=computer: ");
-        int player = Integer.parseInt(scan.nextLine());
-        System.out.println(boardToPlay.to2DString());
+        if(selectedPart.equals("a") || selectedPart.equals("b")){
+            // Play game!
+            boolean play = true;
+            Board boardToPlay = new Board(numRows, numCols, consecToWin);
+            System.out.print("Who plays fist? 1=human, 2=computer: ");
+            int player = Integer.parseInt(scan.nextLine());
+            System.out.println(boardToPlay.to2DString());
 
-        while (play) {
-            if (player == 1) {
-                while (boardToPlay.getGameState() == GameState.IN_PROGRESS) {
-                    List<Integer> minimaxInfoPlay = transpostionTable.get(boardToPlay);
-                    System.out.println("Minimax value for this state: " + minimaxInfoPlay.get(0) + ", optimal move: " + minimaxInfoPlay.get(1));
-                    System.out.println("It is " + boardToPlay.getPlayerToMoveNext() + " turn!");
-                    int move;
-                    if (boardToPlay.getPlayerToMoveNext() == Player.MAX) {
-                        System.out.print("Enter move: ");
-                        move = Integer.parseInt(scan.nextLine());
-                    } else {
-                        move = minimaxInfoPlay.get(1);
+            while (play) {
+                if (player == 1) {
+                    while (boardToPlay.getGameState() == GameState.IN_PROGRESS) {
+                        List<Integer> minimaxInfoPlay = transpostionTable.get(boardToPlay);
+                        System.out.println("Minimax value for this state: " + minimaxInfoPlay.get(0) + ", optimal move: " + minimaxInfoPlay.get(1));
+                        System.out.println("It is " + boardToPlay.getPlayerToMoveNext() + " turn!");
+                        int move;
+                        if (boardToPlay.getPlayerToMoveNext() == Player.MAX) {
+                            System.out.print("Enter move: ");
+                            move = Integer.parseInt(scan.nextLine());
+                        } else {
+                            move = minimaxInfoPlay.get(1);
+                        }
+                        boardToPlay = boardToPlay.makeMove(move);
+                        System.out.println(boardToPlay.to2DString());
+                        if ((move != minimaxInfoPlay.get(1)) && selectedPart.equals("b")) {
+                            List<Integer> test = new ArrayList<>();
+                            test.add(0);
+                            test.add(0);
+                            State testState = new State(boardToPlay, test);
+                            test = alphaBetaSearch(testState, Integer.MIN_VALUE, Integer.MAX_VALUE, transpostionTable);
+                        }
                     }
-                    boardToPlay = boardToPlay.makeMove(move);
-                    System.out.println(boardToPlay.to2DString());
-                    if ((move != minimaxInfoPlay.get(1)) && selectedPart.equals("b")){
-                        List<Integer> test = new ArrayList<>();
-                        test.add(0);
-                        test.add(0);
-                        State testState = new State(boardToPlay, test);
-                        test = alphaBetaSearch(testState, Integer.MIN_VALUE, Integer.MAX_VALUE, transpostionTable);
+                    System.out.println("The winner is " + boardToPlay.getWinner());
+                } else {
+                    while (boardToPlay.getGameState() == GameState.IN_PROGRESS) {
+                        List<Integer> minimaxInfoPlay = transpostionTable.get(boardToPlay);
+                        System.out.println("Minimax value for this state: " + minimaxInfoPlay.get(0) + ", optimal move: " + minimaxInfoPlay.get(1));
+                        System.out.println("It is " + boardToPlay.getPlayerToMoveNext() + " turn!");
+                        int move;
+                        if (boardToPlay.getPlayerToMoveNext() == Player.MAX) {
+                            move = minimaxInfoPlay.get(1);
+                            System.out.println("Computer chooses move: " + move);
+                        } else {
+                            System.out.print("Enter move: ");
+                            move = Integer.parseInt(scan.nextLine());
+                        }
+                        boardToPlay = boardToPlay.makeMove(move);
+                        System.out.println(boardToPlay.to2DString());
+                        if ((move != minimaxInfoPlay.get(1)) && selectedPart.equals("b")) {
+                            List<Integer> test = new ArrayList<>();
+                            test.add(0);
+                            test.add(0);
+                            State testState = new State(boardToPlay, test);
+                            // test is not used just need to do this to have the transpositionTable updated.
+                            test = alphaBetaSearch(testState, Integer.MIN_VALUE, Integer.MAX_VALUE, transpostionTable);
+                        }
                     }
+                    System.out.println("The winner is " + boardToPlay.getWinner());
                 }
-                System.out.println("The winner is " + boardToPlay.getWinner());
-            } else {
-                while (boardToPlay.getGameState() == GameState.IN_PROGRESS) {
-                    List<Integer> minimaxInfoPlay = transpostionTable.get(boardToPlay);
-                    System.out.println("Minimax value for this state: " + minimaxInfoPlay.get(0) + ", optimal move: " + minimaxInfoPlay.get(1));
-                    System.out.println("It is " + boardToPlay.getPlayerToMoveNext() + " turn!");
-                    int move;
-                    if (boardToPlay.getPlayerToMoveNext() == Player.MAX) {
-                        move = minimaxInfoPlay.get(1);
-                        System.out.println("Computer chooses move: " + move);
-                    } else {
-                        System.out.print("Enter move: ");
-                        move = Integer.parseInt(scan.nextLine());
-                    }
-                    boardToPlay = boardToPlay.makeMove(move);
-                    System.out.println(boardToPlay.to2DString());
-                    if ((move != minimaxInfoPlay.get(1)) && selectedPart.equals("b")){
-                        List<Integer> test = new ArrayList<>();
-                        test.add(0);
-                        test.add(0);
-                        State testState = new State(boardToPlay, test);
-                        // test is not used just need to do this to have the transpositionTable updated.
-                        test = alphaBetaSearch(testState, Integer.MIN_VALUE, Integer.MAX_VALUE, transpostionTable);
-                    }
-                }
-                System.out.println("The winner is " + boardToPlay.getWinner());
+                System.out.print("Play again?(y/n): ");
+                String playCheck = scan.nextLine();
+                play = playCheck.equals("y");
+                System.out.print("Who plays fist? 1=human, 2=computer: ");
+                player = Integer.parseInt(scan.nextLine());
+                boardToPlay = new Board(numRows, numCols, consecToWin);
+                minimaxInfo = alphaBetaHeuristicSearch(initialState, Integer.MIN_VALUE, Integer.MAX_VALUE, 0, transpostionTable);
             }
-            System.out.print("Play again?(y/n): ");
-            String playCheck = scan.nextLine();
-            play = playCheck.equals("y");
-
-
         }
-         */
+
+
     }
 
     // Part A
@@ -357,7 +363,6 @@ public class Main {
             return minimaxInfoUpdated;
         }
         else if (isCutoff(state, depth)) {
-            // System.out.println("depth is equal to " + depth);
             int heuristic = eval(state);
             List<Integer> miniMaxInfoH = new ArrayList<>();
             miniMaxInfoH.add(heuristic);
@@ -371,7 +376,6 @@ public class Main {
             List<Integer> minimaxInfoUpdated = new ArrayList<>();
             for (int action : actions(state)) {
                 State child_state = result(state, action);
-                //depth+=1; // CHANGE HERE
                 List<Integer> childInfo = alphaBetaHeuristicSearch(child_state, alpha, beta, depth+1, transpositionTable);
                 int v2 = childInfo.get(0);
                 if (v2 > v){
@@ -397,7 +401,6 @@ public class Main {
             List<Integer> minimaxInfoUpdated = new ArrayList<>();
             for (int action : actions(state)){
                 State child_state = result(state, action);
-                //depth+=1; //CHANGE HERE
                 List<Integer> childInfo = alphaBetaHeuristicSearch(child_state, alpha, beta, depth+1, transpositionTable);
                 int v2 = childInfo.get(0);
                 if (v2 < v) {
